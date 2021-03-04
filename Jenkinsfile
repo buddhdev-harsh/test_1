@@ -1,26 +1,64 @@
-node{
-      def dockerImageName= 'harshdevl/test_task:latest'
-      stage('SCM Checkout'){
-         git 'https://github.com/harshdevl/test_1'
-      }
-      
-      
-      stage('Build Docker Image'){         
-           sh "docker build -t ${dockerImageName} ."
-      }  
-   
-      stage('Publish Docker Image'){
-         withCredentials([string(credentialsId: 'dockerpwd', variable: 'dockerPWD')]) {
-              sh "docker login -u harshdevl -p ${dockerPWD}"
-         }
-        sh "docker push ${dockerImageName}"
-      }
-      
-    stage('Run Docker Image'){
-            def dockerContainerName = 'test_task:latest'
-                    
-            def dockerRun= "sudo docker run -p 8000:8000 -d --name ${dockerContainerName} ${dockerImageName}" 
-        }
-      
-         
+library identifier: 'master', retriever: modernSCM(
+ [$class: 'GitSCMSource',
+  remote: 'https://github.com/harshdevl/test_1.git',
+ ])
+
+pipeline {
+ environment {
+  appName = "test_1"
+  registry = "harshdevl/test_1"
+  registryCredential = "dockerpwdharshdevl"
+  projectPath = "/jenkins/data/workspace/test_1"
+ }
+
+ agent any
+
+ parameters {
+  gitParameter name: 'RELEASE_TAG',
+   type: 'PT_TAG',
+   defaultValue: 'master'
+ }
+
+ stages {
+
+  stage('Basic Information') {
+   steps {
+    sh "echo tag: ${params.RELEASE_TAG}"
+   }
   }
+
+  stage('Build Image') {
+   steps {
+    script {
+     if (isMaster()) {
+      dockerImage = docker.build "$registry:latest"
+     } else {
+      dockerImage = docker.build "$registry:${params.RELEASE_TAG}"
+     }
+    }
+   }
+  }
+
+
+
+  
+  stage('Deploy Image') {
+   steps {
+    script {
+      docker.withRegistry("$registryURL", registryCredential) {
+      dockerImage.push()
+      }
+    }
+   }
+  }
+
+
+
+
+def getBuildName() {
+ "${BUILD_NUMBER}_$appName:${params.RELEASE_TAG}"
+}
+
+def isMaster() {
+ "${params.RELEASE_TAG}" == "master"
+}
