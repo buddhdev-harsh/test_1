@@ -1,65 +1,87 @@
-library identifier: 'master', retriever: modernSCM(
- [$class: 'GitSCMSource',
-  remote: 'https://github.com/harshdevl/test_1.git',
- ])
+import groovy.json.JsonSlurperClassic
+def DOCKER_BUILD_SERVER = "tcp://10.10.10.10:2376"
+def DOCKER_IMAGE_REGISTRY = "harshdevl/test_task:latest"
+def REPOSITORY_NAME = "https://github.com/harshdevl/test_1.git"
 
-pipeline {
- environment {
-  appName = "test_1"
-  registry = "harshdevl/test_1"
-  registryCredential = "dockerpwdharshdevl"
-  projectPath = "/jenkins/data/workspace/test_1"
- }
 
- agent any
+def IMAGE_NAME = "test_task:latest"
+def CONTAINER = "test_task:latest"
+def djangoImages
 
- parameters {
-  gitParameter name: 'RELEASE_TAG',
-   type: 'PT_TAG',
-   defaultValue: 'master'
- }
 
- stages {
+//def pipeline
 
-  stage('Basic Information') {
-   steps {
-    sh "echo tag: ${params.RELEASE_TAG}"
-   }
-  }
+# Version & Release Specified Here
+def getVersion(def projectJson){
+    def slurper = new JsonSlurperClassic()
+    project = slurper.parseText(projectJson)
+    slurper = null
+    return project.version.split('-')[0]
+}
 
-  stage('Build Image') {
-   steps {
-    script {
-     if (isMaster()) {
-      dockerImage = docker.build "$registry:latest"
-     } else {
-      dockerImage = docker.build "$registry:${params.RELEASE_TAG}"
-     }
+# Repository Clone here
+def CloneFromGit( REPOSITORY_NAME ){
+    def version, revision
+    try {
+        git(branch: "${params.BRANCH}",
+                changelog: true,
+                credentialsId: 'FreeIPA_USERID',
+                poll: true,
+                url: "${REPOSITORY_NAME}"
+        )
     }
-   }
-  }
- }
+    catch (Exception e) {
+        println 'Some Exception happened here '
+        throw e
+
+    }
+    finally {
+        revision = version + "-" + sprintf("%04d", env.BUILD_NUMBER.toInteger())
+        println "Start building  revision $revision"
+
+    }
+    return this
+}
+
+# Docker Image build &  Push to registry
+def DockerImageBuild( DOCKER_BUILD_SERVER, DOCKER_IMAGE_REGISTRY, IMAGE_NAME ){
 
 
-  
-  stage('Deploy Image') {
-   steps {
-    script {
-      docker.withRegistry("$registryURL", registryCredential) {
-      dockerImage.push()
+    // Docker Image Build & Deploy
+    withDockerServer([uri: "${DOCKER_BUILD_SERVER}"]) {
+        stage('IMAGE BUILD'){
+
+            djangoImages = docker.build("${DOCKER_IMAGE_REGISTRY}/${IMAGE_NAME}")
+
+
+        }
+
+        //PUSH to Registry
+        stage('PUSH IMAGE'){
+            withDockerRegistry(url: "${DOCKER_IMAGE_REGISTRY}") {
+                djangoImages.push("${IMAGE_NAME}:${env.BUILD_NUMBER}")
+                djangoImages.push("${IMAGE_NAME}:latest")
+            }
+
+
+        }
+
+
+    }
+    return this
+}
+
+// BUILD NODE
+node {
+
+
+     stage('GIT CLONE') {
+            CloneFromGit(REPOSITORY_NAME)
+
       }
-    }
-   }
-  }
 
+     DockerImageBuild(SERVER_TO_DEPLOY,DOCKER_IMAGE_REGISTRY, IMAGE_NAME)
+
+
+//NODE END
 }
-
-
-def getBuildName() {
- "${BUILD_NUMBER}_$appName:${params.RELEASE_TAG}"
-}
-
-def isMaster() {
- "${params.RELEASE_TAG}" == "master"
-}
-
