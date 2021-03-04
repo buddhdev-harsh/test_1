@@ -8,6 +8,8 @@ node{
     
       
      stage('Build Docker Image'){         
+           sh "pwd"
+           
            sh "docker build -t ${dockerImageName} ."
       }  
    
