@@ -62,4 +62,4 @@ def getBuildName() {
 def isMaster() {
  "${params.RELEASE_TAG}" == "master"
 }
-}
+
