@@ -23,7 +23,7 @@ node{
     stage('Run Docker Image'){
             def dockerContainerName = 'harshdevl/test_task:latest'
                       
-            def dockerRun= "sudo docker run -p 8000:8000 -d --name ${dockerContainerName} ${dockerImageName}" 
+            def dockerRun= "sudo docker run -d -p 8000:8000 ${dockerImageName}" 
             sh "${dockerRun}"
             
       
