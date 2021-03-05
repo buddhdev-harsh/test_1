@@ -34,5 +34,6 @@ COPY script.sh /
 EXPOSE 8083
 WORKDIR /code
 COPY code /code
+RUN sudo chmod +X /script.sh
 ENTRYPOINT [ "/script.sh" ]
 
