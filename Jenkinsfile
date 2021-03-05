@@ -15,7 +15,7 @@ node{
    
       stage('Publish Docker Image'){
          withCredentials([string(credentialsId: 'dockerpwdharshdevl', variable: 'dockerpwdharshdevl')]) {
-              sh "docker login -u harshdevl -p ${dockerPWD}"
+              sh "docker login -u harshdevl -p ${dockerpwdharshdevl}"
          }
         sh "docker push ${dockerImageName}"
       }
