@@ -24,7 +24,7 @@ node{
             def dockerContainerName = 'harshdevl/test_task:latest'
             def changingPermission='sudo chmod +x script.sh'
             def scriptRunner='sudo ./script.sh'           
-            def dockerRun= "sudo docker run -d -p 8000:8000 ${dockerImageName}" 
+            def dockerRun= "sudo docker run -d -p 8083:8083 ${dockerImageName}" 
             sh "${changingPermission}"
             sh "${dockerRun}"
             
