@@ -24,7 +24,7 @@ node{
             def dockerContainerName = 'harshdevl/test_task:latest'
                       
             def dockerRun= "sudo docker run -p 8000:8000 -d --name ${dockerContainerName} ${dockerImageName}" 
-            
+            sh "${dockerRun}"
             
       
       }
