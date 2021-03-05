@@ -25,7 +25,7 @@ node{
             def changingPermission='sudo chmod +x script.sh'
             def scriptRunner='sudo ./script.sh'           
             def dockerRun= "sudo docker run -d -p 8083:8083 ${dockerImageName}" 
-            sh "${changingPermission}"
+           
             sh "${dockerRun}"
             
       
